@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 Base = declarative_base()
 
 engine = create_engine(
-    "sqlite:///news.db",
+    "sqlite:///db/news.db",
     echo=False
 )
 
