@@ -56,8 +56,9 @@ def add_label():
 def recommendations():
     s = get_session()
     try:
-        # Показываем новости, которые мы пометили как "good"
-        rows = s.query(News).filter(News.label == 'good').all()
+        # Пока ML-классификатор не готов, мы просто передаем пустой список.
+        rows = [] 
+        
         return template('news_template', rows=rows)
     finally:
         s.close()
