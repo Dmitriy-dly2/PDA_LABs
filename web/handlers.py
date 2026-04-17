@@ -49,14 +49,8 @@ def news_list():
     s = get_session()
 
     try:
-        print("\n=== NEWS LIST DEBUG ===")
-
         rows = s.query(News).filter(
             News.label.is_(None)).all()
-
-        if rows:
-            for n in rows[:5]:
-                print(f"ID: {n.id}, Label: '{n.label}', Title: {n.title[:50]}")
 
         return template('news_template', rows=rows, is_recommendations=False)
 

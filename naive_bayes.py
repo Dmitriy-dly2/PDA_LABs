@@ -4,7 +4,7 @@ from collections import Counter, defaultdict
 
 
 class NaiveBayesClassifier:
-    def __init__(self, alpha=1.0):
+    def __init__(self, alpha=0.1):
         self.alpha = alpha
 
         self.class_counts = Counter()
