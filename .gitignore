@@ -1,0 +1,10 @@
+# Virtual environments
+.venv/
+
+# IDE (JetBrains)
+.idea/
+*.iml
+
+# Python cache
+__pycache__/
+*.py[cod]
