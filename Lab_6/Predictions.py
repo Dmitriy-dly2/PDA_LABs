@@ -13,6 +13,9 @@ from sklearn.metrics import ndcg_score
 ratings = pd.read_csv("Files/Ratings_cleaned.csv")
 books = pd.read_csv("Files/Books_cleaned.csv")
 
+ratings["ISBN"] = ratings["ISBN"].astype(str)
+books["ISBN"] = books["ISBN"].astype(str)
+
 # =====================================================
 # ЗАГРУЗКА МОДЕЛЕЙ
 # =====================================================
@@ -100,27 +103,69 @@ print(rec_zero_user[["Book-Title", "svd_score", "linreg_score"]].head(10))
 
 
 # =====================================================
-# Рекомендация для пользователя, который оценил больше всего книг
+# Рекомендация для пользователя с наибольшим числом оценок
 # =====================================================
 
+# унификация типов (ВАЖНО)
+ratings["ISBN"] = ratings["ISBN"].astype(str)
+books["ISBN"] = books["ISBN"].astype(str)
+
+# самый активный пользователь
 user_most = ratings["User-ID"].value_counts().idxmax()
 user_most_data = ratings[ratings["User-ID"] == user_most]
 
-# разделение на train/test (ВАЖНО для оценки)
+# train / test
 train, test = train_test_split(user_most_data, test_size=0.2, random_state=42)
 
 test_books = set(test["ISBN"])
 seen_train = set(train["ISBN"])
 
-candidate_active = books[~books["ISBN"].isin(seen_train)].copy()
+candidate_active = books[~books["ISBN"].isin(seen_train)]
 
-# предсказание SVD
+# =====================================================
+# SVD предсказания
+# =====================================================
+
 candidate_active["svd_score"] = [
     svd.predict(user_most, isbn).est
     for isbn in candidate_active["ISBN"]
 ]
 
-top10_active = candidate_active.sort_values("svd_score", ascending=False).head(10)
+
+candidate_active = candidate_active[[
+    "ISBN",
+    "Book-Title",
+    "svd_score"
+]]
+
+top10_active = candidate_active.sort_values(
+    "svd_score",
+    ascending=False
+).head(10)
+
+test_ratings = test[["ISBN", "Book-Rating"]].rename(
+    columns={"Book-Rating": "real_rating"}
+)
+
+
+top10_with_real = top10_active.merge(
+    test_ratings,
+    on="ISBN",
+    how="left"
+)
+
+
+print("\n📌 RECOMMENDATION #2 (ACTIVE USER)")
+
+print(
+    top10_with_real[[
+        "ISBN",
+        "Book-Title",
+        "svd_score",
+    ]]
+)
+
+top10_with_real.to_csv("Files/top10_with_real.csv", index=False)
 
 # =====================================================
 # Метрики
@@ -134,9 +179,6 @@ relevance = np.array([
 ]).reshape(1, -1)
 
 dcg = ndcg_score(relevance, [top10_active["svd_score"].values])
-
-print("\n📌 RECOMMENDATION #2 (ACTIVE USER)")
-print(top10_active[["Book-Title", "svd_score"]])
 
 print("\n📊 METRICS (ACTIVE USER)")
 print("Hit Rate:", hit_rate)
