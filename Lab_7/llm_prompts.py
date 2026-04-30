@@ -86,7 +86,7 @@ def rag_answer(query, model_type="minilm"):
 
 
 if __name__ == "__main__":
-    query = "What are neural network methods for anomaly detection?"
+    query = "How are neural networks applied in machine learning for anomaly detection and intrusion detection tasks?"
 
     for model_type in ["minilm", "mpnet"]:
         print(f"\n=== RAG ({model_type}) ===")
