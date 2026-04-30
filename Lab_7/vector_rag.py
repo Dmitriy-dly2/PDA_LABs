@@ -16,13 +16,15 @@ def load_data(model_type="minilm"):
 
 def build_index(embeddings):
     emb = np.array(embeddings).astype("float32")
-    index = faiss.IndexFlatL2(emb.shape[1])
+    faiss.normalize_L2(emb)
+    index = faiss.IndexFlatIP(emb.shape[1])  # cosine similarity
     index.add(emb)
     return index
 
 
-def retrieve(query, index, chunks, model, k=3):
+def retrieve(query, index, chunks, model, k=5):
     q = model.encode([query]).astype("float32")
+    faiss.normalize_L2(q)
     _, idx = index.search(q, k)
     return [chunks[i] for i in idx[0]]
 
@@ -41,7 +43,12 @@ if __name__ == "__main__":
             else "all-mpnet-base-v2"
         )
 
-        results = retrieve("volcanic eruption chemistry", index, chunks, model)
+        results = retrieve(
+            "deep learning for intrusion detection systems",
+            index,
+            chunks,
+            model
+        )
 
         for r in results:
             print("-", r[:150])

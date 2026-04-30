@@ -1,4 +1,5 @@
 import requests
+import re
 import xml.etree.ElementTree as ET
 import pandas as pd
 import pickle
@@ -7,8 +8,8 @@ import time
 from sentence_transformers import SentenceTransformer
 
 
-QUERY = "all:volcanology"
-MAX_RESULTS = 100
+QUERY = "cat:cs.LG"
+MAX_RESULTS = 300
 
 
 def fetch_arxiv_data(query, max_results):
@@ -36,8 +37,14 @@ def fetch_arxiv_data(query, max_results):
 
                 data = []
                 for entry in root.findall("atom:entry", ns):
+                    authors = [
+                        author.find("atom:name", ns).text
+                        for author in entry.findall("atom:author", ns)
+                    ]
+
                     data.append({
                         "title": entry.find("atom:title", ns).text,
+                        "authors": ", ".join(authors),
                         "summary": entry.find("atom:summary", ns).text
                     })
 
@@ -50,13 +57,20 @@ def fetch_arxiv_data(query, max_results):
     raise Exception("Failed to fetch arXiv data")
 
 
-def chunk_text(text, size=300, overlap=30):
-    words = text.split()
+def chunk_text(text, chunk_size=500, overlap=50):
+    # Очистка текста и разделение на слова
+    words = re.findall(r'\w+', text)
+
     chunks = []
-    i = 0
-    while i < len(words):
-        chunks.append(" ".join(words[i:i+size]))
-        i += size - overlap
+    start = 0
+
+    while start < len(words):
+        end = start + chunk_size
+        chunk = " ".join(words[start:end])
+        chunks.append(chunk)
+        # сдвиг окна
+        start += (chunk_size - overlap)
+
     return chunks
 
 
@@ -88,4 +102,19 @@ if __name__ == "__main__":
     with open("models/embeddings_mpnet.pkl", "wb") as f:
         pickle.dump(emb2, f)
 
-    print(f"Saved {len(chunks)} chunks")
+    print("\n=== SAMPLE CHUNK TEST ===")
+
+    sample_summary = df.iloc[0]["summary"]
+    sample_chunks = chunk_text(sample_summary)
+
+    print("Number of chunks in first article:", len(sample_chunks))
+    print("First chunk:\n", sample_chunks[0])
+
+    num_articles = len(df)
+    total_chunks = len(chunks)
+    avg_chunks = total_chunks / num_articles if num_articles > 0 else 0
+
+    print("\n=== STATISTICS ===")
+    print("Number of articles:", num_articles)
+    print("Saved chunks:", total_chunks)
+    print("Average chunks per article:", round(avg_chunks, 2))
